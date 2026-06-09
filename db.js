@@ -1,12 +1,19 @@
-var Database = require('better-sqlite3');
-var path = require('path');
+var { Pool } = require('pg');
+require('dotenv').config();
 
-var DB_PATH = path.join(__dirname, 'todos.db');
-var db = new Database(DB_PATH);
+var pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+pool.query(`
+  CREATE TABLE IF NOT EXISTS todos (
+    id SERIAL PRIMARY KEY,
+    text TEXT NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )
+`).catch(function (err) {
+  console.error('Failed to create table:', err.message);
+});
 
-db.exec('\n  CREATE TABLE IF NOT EXISTS todos (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    text TEXT NOT NULL,\n    completed INTEGER NOT NULL DEFAULT 0,\n    created_at TEXT NOT NULL DEFAULT (datetime(\'now\'))\n  )\n');
-
-module.exports = db;
+module.exports = pool;
